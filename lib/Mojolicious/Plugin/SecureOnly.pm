@@ -8,7 +8,7 @@ sub register {
 
   $app->hook(before_dispatch => sub {
     my $c = shift;
-    return if $ENV{MOJO_NO_SECUREONLY} || $c->req->is_secure;
+    return if $ENV{MOJO_NO_SECUREONLY} || $app->config('no_secureonly') || $c->req->is_secure;
 
     my $url = $c->req->url->to_abs;
     $url->scheme('https');
