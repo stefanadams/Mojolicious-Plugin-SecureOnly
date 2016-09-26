@@ -1,24 +1,37 @@
 package Mojolicious::Plugin::SecureOnly;
 use Mojo::Base 'Mojolicious::Plugin';
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
+
+has 'conf' => sub { {} };
 
 sub register {
-  my ($self, $app, $config) = @_;
+  my ($self, $app, $conf) = @_;
+
+  $self->conf({%$conf, %{$app->config('SecureOnly')||{}}});
 
   $app->hook(before_dispatch => sub {
     my $c = shift;
-    return if $ENV{MOJO_NO_SECUREONLY} || $app->config('no_secureonly') || $c->req->is_secure;
+
+    return if $c->req->is_secure;
+    return $app->log->warn('SecureOnly disabled; Reverse Proxy support not enabled in Mojolicious, see http://mojolicious.org/perldoc/Mojo/Server#reverse_proxy')
+      if !$c->tx->req->reverse_proxy && detect_proxy($c);
 
     my $url = $c->req->url->to_abs;
     $url->scheme('https');
-    $url->port($config->{secureport}) if $config->{secureport};
-    $c->app->log->debug("SecureOnly: $url");
+    $url->port($self->conf->{secureport}) if $self->conf->{secureport};
+    $c->app->log->debug("SecureOnly enabled; Request for insecure resource, redirecting to $url");
     $c->redirect_to($url);
   });
 }
 
+sub detect_proxy {
+  my $c = shift;
+  return $c->tx->req->headers->header('X-Forwarded-For') || $c->tx->req->headers->header('X-Forwarded-Proto')
+}
+
 1;
+
 __END__
 
 =encoding utf8
@@ -38,8 +51,8 @@ secure.
 
 =head1 DESCRIPTION
 
-L<Mojolicious::Plugin::SecureOnly> is a L<Mojolicious> plugin that will redirect
-all insecure requests to a secure resource.
+L<Mojolicious::Plugin::SecureOnly> is a L<Mojolicious> plugin that will
+redirect all insecure requests to a secure resource.
 
 =head1 METHODS
 

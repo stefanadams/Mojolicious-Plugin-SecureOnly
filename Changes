@@ -1,2 +1,9 @@
+0.03  Not Released
+
+0.02  2016-09-25
+  - Improve proxy conditions.
+  - Improve configuration handling.
+  - Improve tests.
+
 0.01  2015-12-23
   - First release.
