@@ -13,6 +13,13 @@ sub register {
   $app->hook(before_dispatch => sub {
     my $c = shift;
 
+    if ( $self->conf->{not_modes} ) {
+      return if grep { $_ eq $app->mode } @{$self->conf->{not_modes}||[]};
+    }
+    if ( $self->conf->{modes} ) {
+      return unless grep { $_ eq $app->mode } @{$self->conf->{modes}||[]};
+    }
+
     return if $c->req->is_secure;
     return $app->log->warn('SecureOnly disabled; Reverse Proxy support not enabled in Mojolicious, see http://mojolicious.org/perldoc/Mojo/Server#reverse_proxy')
       if !$c->tx->req->reverse_proxy && detect_proxy($c);
